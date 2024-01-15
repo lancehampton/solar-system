@@ -21,7 +21,7 @@ jobs:
         ports:
           - 27017:27017 # host:container
     env: # Takes precedence over env in the top level
-      MONGO_URI: 'mongodb+srv://localhost:27017/superData'
+      MONGO_URI: 'mongodb://localhost:27017/superData'
       MONGO_USERNAME: non-prod-user
       MONGO_PASSWORD: non-prod-password
     strategy:

@@ -72,7 +72,7 @@ jobs:
         options:
           --name mongo
     env: # Takes precedence over env in the top level
-      MONGO_URI: 'mongodb://mongo:27107/superData'
+      MONGO_URI: 'mongodb://mongo:27017/superData'
       MONGO_USERNAME: non-prod-user
       MONGO_PASSWORD: non-prod-password
     runs-on: ubuntu-latest

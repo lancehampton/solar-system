@@ -193,9 +193,11 @@ jobs:
           echo ---------------------------------
           kubectl get nodes
 
-      - name: Get Nginx Ingress Controller IP
-        run: |
-          echo "INGRESS_IP=$(kubectl -n ingress-nginx get services ingress-nginx-controller -o jsonpath="{.status.loadBalancer.ingress[0].ip}")" >> $GITHUB_ENV
+      # # Ingress needs to be running for this step to work
+      # # For now, we use localhost elsewhere in the workflow
+      # - name: Get Nginx Ingress Controller IP
+      #   run: |
+      #     echo "INGRESS_IP=$(kubectl -n ingress-nginx get services ingress-nginx-controller -o jsonpath="{.status.loadBalancer.ingress[0].ip}")" >> $GITHUB_ENV
 
       - name: Replace tokens in manifest files
         uses: cschleiden/replace-tokens@v1
@@ -207,7 +209,7 @@ jobs:
           NAMESPACE: ${{ vars.NAMESPACE }}
           REPLICAS: ${{ vars.REPLICAS }}
           IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
-          INGRESS_IP: ${{ env.INGRESS_IP }}
+          INGRESS_IP: localhost # ${{ env.INGRESS_IP }}
 
       - name: Check files
         run: |

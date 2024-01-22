@@ -174,6 +174,9 @@ jobs:
         with:
           version: 'v1.26.0' # default is latest stable
 
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1.8.0
+
       - name: Get cluster details
         run: |
           kubectl version --short

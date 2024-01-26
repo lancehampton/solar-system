@@ -185,7 +185,7 @@ jobs:
         uses: helm/kind-action@v1.8.0
         with:
           kubectl_version: v1.26.0
-          config: .github/kind-config.yaml
+          config: .github/kind-config.yml
 
       # # Uncomment this step if you want to use a pre-existing cluster.
       # # Make sure to set the kubeconfig secret in the repo settings

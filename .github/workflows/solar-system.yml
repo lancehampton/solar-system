@@ -204,6 +204,11 @@ jobs:
         run: |
           kubectl create namespace ${{ vars.NAMESPACE }}
 
+      - name: Install NGINX Ingress Controller
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+          kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
+
       # Ingress needs to be running for this step to work
       # For now, we use localhost elsewhere in the workflow
       - name: Get Nginx Ingress Controller IP

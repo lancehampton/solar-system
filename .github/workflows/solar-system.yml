@@ -184,8 +184,9 @@ jobs:
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1.8.0
         with:
-          kubectl_version: v1.26.0
+          kubectl_version: v1.26.4
           config: .github/kind-config.yml
+          install_only: false # starts a new cluster
 
       # # Uncomment this step if you want to use a pre-existing cluster.
       # # Make sure to set the kubeconfig secret in the repo settings
@@ -212,13 +213,11 @@ jobs:
             --for=condition=ready pod \
             --selector=app.kubernetes.io/component=controller \
             --timeout=90s \
-            || (kubectl get nodes --show-labels && kubectl get pod -l app.kubernetes.io/component=controller --namespace ingress-nginx -o jsonpath='{.items[0].spec.affinity}' && kubectl get pod -l app.kubernetes.io/component=controller --namespace ingress-nginx -o jsonpath='{.items[0].spec.nodeSelector}' && exit 1)
 
-      # Ingress needs to be running for this step to work
-      # For now, we use localhost elsewhere in the workflow
+      # ingress-nginx-controller service is of type nodePort in a kind cluster
       - name: Get Nginx Ingress Controller IP
         run: |
-          echo "INGRESS_IP=$(kubectl -n ingress-nginx get services ingress-nginx-controller -o jsonpath="{.status.loadBalancer.ingress[0].ip}")" >> $GITHUB_ENV
+          echo "INGRESS_PORT=$(kubectl -n ingress-nginx get services ingress-nginx-controller -o jsonpath="{.spec.ports[0].nodePort}")" >> $GITHUB_ENV
 
       - name: Replace tokens in manifest files
         uses: cschleiden/replace-tokens@v1

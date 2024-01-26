@@ -216,7 +216,7 @@ jobs:
       # ingress-nginx-controller service is of type nodePort in a kind cluster
       - name: Get Nginx Ingress Controller IP
         run: |
-          echo "INGRESS_PORT=$(kubectl -n ingress-nginx get services ingress-nginx-controller -o jsonpath="{.spec.ports[0].nodePort}")" >> $GITHUB_ENV
+          echo "INGRESS_PORT=$(kubectl -n ingress-nginx get service ingress-nginx-controller --output='jsonpath={.spec.ports[?(@.name=="http")].nodePort}')" >> $GITHUB_ENV
 
       - name: Replace tokens in manifest files
         uses: cschleiden/replace-tokens@v1

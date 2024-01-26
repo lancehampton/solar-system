@@ -186,7 +186,6 @@ jobs:
         with:
           kubectl_version: v1.26.4
           config: .github/kind-config.yml
-          install_only: false # starts a new cluster
 
       # # Uncomment this step if you want to use a pre-existing cluster.
       # # Make sure to set the kubeconfig secret in the repo settings

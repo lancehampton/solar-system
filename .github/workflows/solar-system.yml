@@ -193,6 +193,10 @@ jobs:
           echo ---------------------------------
           kubectl get nodes
 
+      - name: Create namespace
+        run: |
+          kubectl create namespace ${{ vars.NAMESPACE }}
+
       # # Ingress needs to be running for this step to work
       # # For now, we use localhost elsewhere in the workflow
       # - name: Get Nginx Ingress Controller IP

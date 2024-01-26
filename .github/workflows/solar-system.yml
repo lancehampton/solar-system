@@ -218,8 +218,8 @@ jobs:
         run: |
           echo "INGRESS_PORT=$(kubectl -n ingress-nginx get service ingress-nginx-controller --output='jsonpath={.spec.ports[?(@.name=="http")].nodePort}')" >> $GITHUB_ENV
           echo "Debug: INGRESS_PORT=$INGRESS_PORT"
-          echo "Debug: Service details:"
-          kubectl -n ingress-nginx get service ingress-nginx-controller
+          echo "Debug: Service details in JSON:"
+          kubectl -n ingress-nginx get service ingress-nginx-controller -o json
 
       - name: Replace tokens in manifest files
         uses: cschleiden/replace-tokens@v1

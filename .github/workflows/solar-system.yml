@@ -176,6 +176,11 @@ jobs:
         with:
           version: v1.26.0 # default is latest stable
 
+      - name: Setup Local DNS
+        run: |
+          curl -L https://nip.io/nip.io -o ${{ github.workspace }}/nip \
+            && chmod +x ${{ github.workspace }}/nip
+
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1.8.0
         with:
@@ -215,7 +220,7 @@ jobs:
           NAMESPACE: ${{ vars.NAMESPACE }}
           REPLICAS: ${{ vars.REPLICAS }}
           IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
-          INGRESS_IP: localhost # ${{ env.INGRESS_IP }}
+          INGRESS_IP: 127.0.0.1 # ${{ env.INGRESS_IP }}
 
       - name: Create MongoDB secret
         run: |

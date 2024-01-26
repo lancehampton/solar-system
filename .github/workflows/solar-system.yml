@@ -256,9 +256,13 @@ jobs:
       - name: Set App Ingress Host URL
         id: app-ingress-host
         run: |
+          echo "Debug: Cluster info:"
+          kubectl cluster-info
+          echo "Debug: Ingress objects in namespace:"
+          kubectl get ingress -n ${{ vars.NAMESPACE }}
           echo "Debug: Ingress object in JSON:"
           kubectl -n ${{ vars.NAMESPACE }} get ingress -o json
-          echo "APP_INGRESS_HOST=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath='{.items[0].spec.tls[0].hosts[0]}')" >> $GITHUB_ENV
+          echo "APP_INGRESS_HOST=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath='{.items[0].metadata.name}')" >> $GITHUB_ENV
           echo "Debug: APP_INGRESS_HOST=${{ env.APP_INGRESS_HOST }}"
 
   integration-test:

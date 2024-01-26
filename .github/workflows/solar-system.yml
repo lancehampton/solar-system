@@ -213,11 +213,13 @@ jobs:
             --selector=app.kubernetes.io/component=controller \
             --timeout=90s \
 
-      # ingress-nginx-controller service is of type nodePort in a kind cluster
+      # If using kind, ingress-nginx is exposed on localhost
+      # If using a pre-existing cluster, use the following command to get the IP
+      # echo "INGRESS_IP=$(kubectl -n ingress-nginx get service ingress-nginx-controller --output='jsonpath={.status.loadBalancer.ingress[0].ip}')" >> $GITHUB_ENV
       - name: Get Nginx Ingress Controller IP
         run: |
-          echo "INGRESS_PORT=$(kubectl -n ingress-nginx get service ingress-nginx-controller --output='jsonpath={.spec.ports[?(@.name=="http")].nodePort}')" >> $GITHUB_ENV
-          echo "Debug: INGRESS_PORT=$INGRESS_PORT"
+          echo "INGRESS_IP=localhost" >> $GITHUB_ENV
+          echo "Debug: INGRESS_IP=$INGRESS_IP"
           echo "Debug: Service details in JSON:"
           kubectl -n ingress-nginx get service ingress-nginx-controller -o json
 

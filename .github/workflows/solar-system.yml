@@ -61,6 +61,7 @@ jobs:
       with:
         name: mocha-test-result
         path: test-results.xml
+        retention-days: 5
 
   code-coverage:
     name: Code Coverage
@@ -80,7 +81,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Not required when using job container above
+    # Job container already has node:18 and will startup faster
     # - name: Setup NodeJS Version - 18
     #   uses: actions/setup-node@v3
     #   with:
@@ -268,7 +269,7 @@ jobs:
           echo "---------------------------------"
           curl https://$APP_INGRESS_HOST/live -s -k | jq -r '.status' | grep -i live
 
-  # integration-test:
+  # dev-integration-test:
   #   name: Dev Integration Testing
   #   needs: [dev-deploy]
   #   runs-on: ubuntu-latest
@@ -276,6 +277,127 @@ jobs:
   #     - name: Test URL output using CURL and JQ
   #       env:
   #         URL: ${{ needs.dev-deploy.outputs.APP_INGRESS_URL }}
+  #       run: |
+  #         echo $URL
+  #         echo "---------------------------------"
+  #         curl https://$URL/live -s -k | jq -r '.status' | grep -i live
+
+
+
+  prod-deploy:
+    name: Prod Deployment
+    environment:
+      name: production
+      url: https://${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
+    needs: [dev-deploy]
+    outputs:
+      APP_INGRESS_URL: ${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install kubectl CLI
+        uses: azure/setup-kubectl@v3
+        with:
+          version: v1.26.0 # default is latest stable
+
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1.8.0
+        with:
+          kubectl_version: v1.26.4
+          config: .github/kind-config.yml
+
+      # # Uncomment this step if you want to use a pre-existing cluster.
+      # # Make sure to set the kubeconfig secret in the repo settings
+      # - uses: azure/k8s-set-context@v3
+      #   with:
+      #       method: kubeconfig
+      #       kubeconfig: <your kubeconfig>
+      #       context: <context name> # current-context from kubeconfig is used as default
+
+      - name: Get cluster details
+        run: |
+          kubectl version --short
+          echo ---------------------------------
+          kubectl get nodes
+
+      - name: Create ${{ vars.NAMESPACE }} namespace
+        run: |
+          kubectl create namespace ${{ vars.NAMESPACE }}
+
+      - name: Install NGINX Ingress Controller
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+          kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=90s \
+
+      # If using kind, ingress-nginx is exposed on localhost
+      # If using a pre-existing cluster, use the following command to get the IP
+      # echo "INGRESS_IP=$(kubectl -n ingress-nginx get service ingress-nginx-controller --output='jsonpath={.status.loadBalancer.ingress[0].ip}')" >> $GITHUB_ENV
+      - name: Get Nginx Ingress Controller IP
+        run: |
+          echo "INGRESS_IP=127.0.0.1" >> $GITHUB_ENV
+          echo "Debug: INGRESS_IP=$INGRESS_IP"
+          echo "Debug: Service details in JSON:"
+          kubectl -n ingress-nginx get service ingress-nginx-controller -o json
+
+      - name: Replace tokens in manifest files
+        uses: cschleiden/replace-tokens@v1
+        with:
+          tokenPrefix: '_{_'
+          tokenSuffix: '_}_'
+          files: '["kubernetes/production/*.yaml"]'
+        env:
+          NAMESPACE: ${{ vars.NAMESPACE }}
+          REPLICAS: ${{ vars.REPLICAS }}
+          IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+          INGRESS_IP: ${{ env.INGRESS_IP }}
+
+      - name: Check files
+        run: |
+          cat kubernetes/production/*.yaml
+
+      - name: Create MongoDB secret
+        run: |
+          kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
+            --from-literal=MONGO_URI=${{ env.MONGO_URI }} \
+            --from-literal=MONGO_USERNAME=${{ env.MONGO_USERNAME }} \
+            --from-literal=MONGO_PASSWORD=${{ env.MONGO_PASSWORD }} \
+            --save-config \
+            --dry-run=client \
+            -o yaml | kubectl apply -f -
+
+      # Deploy and wait 15s for app to start
+      - name: Deploy to Prod Env
+        run: |
+          kubectl apply -f kubernetes/production
+          kubectl rollout status deployment/solar-system -n ${{ vars.NAMESPACE }}
+          sleep 15
+          kubectl get pods -n ${{ vars.NAMESPACE }} -l app=solar-system
+
+      - name: Set App Ingress Host URL
+        id: app-ingress-host
+        run: |
+          echo "APP_INGRESS_HOST=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath='{.items[0].spec.rules[0].host}')" >> $GITHUB_ENV
+          echo "APP_INGRESS_HOST=$APP_INGRESS_HOST" >> $GITHUB_OUTPUT
+
+      - name: Test URL output using CURL and JQ
+        run: |
+          echo $APP_INGRESS_HOST
+          echo "---------------------------------"
+          curl https://$APP_INGRESS_HOST/live -s -k | jq -r '.status' | grep -i live
+
+  # prod-integration-test:
+  #   name: Prod Integration Testing
+  #   needs: [prod-deploy]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Test URL output using CURL and JQ
+  #       env:
+  #         URL: ${{ needs.prod-deploy.outputs.APP_INGRESS_URL }}
   #       run: |
   #         echo $URL
   #         echo "---------------------------------"

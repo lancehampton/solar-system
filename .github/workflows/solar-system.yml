@@ -163,6 +163,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/solar-system:${{ github.sha }}
 
   dev-deploy:
+    name: Dev Deployment
     needs: [docker]
     outputs:
       APP_INGRESS_URL: ${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
@@ -230,6 +231,10 @@ jobs:
           IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
           INGRESS_IP: ${{ env.INGRESS_IP }}
 
+      - name: Check files
+        run: |
+          cat kubernetes/development/*.yaml
+
       - name: Create MongoDB secret
         run: |
           kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
@@ -240,29 +245,18 @@ jobs:
             --dry-run=client \
             -o yaml | kubectl apply -f -
 
-      - name: Check files
-        run: |
-          cat kubernetes/development/*.yaml
-
+      # Deploy and wait 15s to app to start
       - name: Deploy to Dev Env
         run: |
           kubectl apply -f kubernetes/development
           kubectl rollout status deployment/solar-system -n ${{ vars.NAMESPACE }}
-          kubectl get pods -n ${{ vars.NAMESPACE }} -l app=solar-system
-          sleep 30
+          sleep 15
           kubectl get pods -n ${{ vars.NAMESPACE }} -l app=solar-system
 
       - name: Set App Ingress Host URL
         id: app-ingress-host
         run: |
-          echo "Debug: Cluster info:"
-          kubectl cluster-info
-          echo "Debug: Ingress objects in namespace:"
-          kubectl get ingress -n ${{ vars.NAMESPACE }}
-          echo "Debug: Ingress object in JSON:"
-          kubectl -n ${{ vars.NAMESPACE }} get ingress -o json
           echo "APP_INGRESS_HOST=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath='{.items[0].spec.rules[0].host}')" >> $GITHUB_ENV
-
       - name: Test URL output using CURL and JQ
         run: |
           echo $APP_INGRESS_HOST

@@ -265,7 +265,13 @@ jobs:
         run: |
           echo $APP_INGRESS_HOST
           echo "---------------------------------"
-          curl https://$APP_INGRESS_HOST/live -s -k | jq -r '.status' | grep -i live
+          echo "HTTP Status Code:"
+          curl -v -o /dev/null -s -w "%{http_code}\n" https://$APP_INGRESS_HOST/live -k
+          echo "JSON Response:"
+          curl -v https://$APP_INGRESS_HOST/live -s -k | jq
+          echo "Status Field:"
+          curl -v https://$APP_INGRESS_HOST/live -s -k | jq -r '.status'
+          curl -v https://$APP_INGRESS_HOST/live -s -k | jq -r '.status' | grep -i live
 
   # integration-test:
   #   name: Dev Integration Testing

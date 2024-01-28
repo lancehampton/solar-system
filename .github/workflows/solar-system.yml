@@ -176,11 +176,6 @@ jobs:
         with:
           version: v1.26.0 # default is latest stable
 
-      - name: Setup Local DNS
-        run: |
-          curl -L https://nip.io/nip.io -o ${{ github.workspace }}/nip \
-            && chmod +x ${{ github.workspace }}/nip
-
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1.8.0
         with:
@@ -218,7 +213,7 @@ jobs:
       # echo "INGRESS_IP=$(kubectl -n ingress-nginx get service ingress-nginx-controller --output='jsonpath={.status.loadBalancer.ingress[0].ip}')" >> $GITHUB_ENV
       - name: Get Nginx Ingress Controller IP
         run: |
-          echo "INGRESS_IP=localhost" >> $GITHUB_ENV
+          echo "INGRESS_IP=127.0.0.1" >> $GITHUB_ENV
           echo "Debug: INGRESS_IP=$INGRESS_IP"
           echo "Debug: Service details in JSON:"
           kubectl -n ingress-nginx get service ingress-nginx-controller -o json
@@ -277,10 +272,4 @@ jobs:
         run: |
           echo $URL
           echo "---------------------------------"
-          echo "Debug: HTTP headers:"
-          curl -I https://$URL/live -s -k
-          echo "Debug: JSON output:"
-          curl https://$URL/live -s -k | jq -r '.'
-          echo "Debug: Status field:"
-          curl https://$URL/live -s -k | jq -r '.status'
           curl https://$URL/live -s -k | jq -r '.status' | grep -i live

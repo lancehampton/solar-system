@@ -258,8 +258,6 @@ jobs:
           echo "Debug: Ingress object in JSON:"
           kubectl -n ${{ vars.NAMESPACE }} get ingress -o json
           echo "APP_INGRESS_HOST=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath='{.items[0].spec.rules[0].host}')" >> $GITHUB_ENV
-          echo "Debug: Contents of GITHUB_OUTPUT:"
-          cat $GITHUB_OUTPUT
 
       - name: Test URL output using CURL and JQ
         run: |
@@ -267,11 +265,8 @@ jobs:
           echo "---------------------------------"
           echo "HTTP Status Code:"
           curl -v -o /dev/null -s -w "%{http_code}\n" https://$APP_INGRESS_HOST/live -k
-          echo "JSON Response:"
-          curl -v https://$APP_INGRESS_HOST/live -s -k | jq
-          echo "Status Field:"
-          curl -v https://$APP_INGRESS_HOST/live -s -k | jq -r '.status'
-          curl -v https://$APP_INGRESS_HOST/live -s -k | jq -r '.status' | grep -i live
+          echo "Raw Response:"
+          curl -v https://$APP_INGRESS_HOST/live -s -k
 
   # integration-test:
   #   name: Dev Integration Testing

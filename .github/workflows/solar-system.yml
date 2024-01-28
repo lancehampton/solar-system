@@ -164,6 +164,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/solar-system:${{ github.sha }}
 
   dev-deploy:
+    if: contains(github.ref, 'feature/')
     name: Dev Deployment
     environment:
       name: development
@@ -269,7 +270,9 @@ jobs:
           echo "---------------------------------"
           curl https://$APP_INGRESS_HOST/live -s -k | jq -r '.status' | grep -i live
 
+  # # Not used with kind cluster
   # dev-integration-test:
+  #   if: contains(github.ref, 'feature/')
   #   name: Dev Integration Testing
   #   needs: [dev-deploy]
   #   runs-on: ubuntu-latest
@@ -285,11 +288,12 @@ jobs:
 
 
   prod-deploy:
+    if: github.ref == 'refs/heads/main'
     name: Prod Deployment
     environment:
       name: production
       url: https://${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
-    needs: [dev-deploy]
+    needs: [docker]
     outputs:
       APP_INGRESS_URL: ${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
     runs-on: ubuntu-latest
@@ -390,7 +394,9 @@ jobs:
           echo "---------------------------------"
           curl https://$APP_INGRESS_HOST/live -s -k | jq -r '.status' | grep -i live
 
+  # # Not used with internal kind cluster
   # prod-integration-test:
+  #   if: github.ref == 'refs/heads/main'
   #   name: Prod Integration Testing
   #   needs: [prod-deploy]
   #   runs-on: ubuntu-latest

@@ -247,6 +247,7 @@ jobs:
       - name: Deploy to Dev Env
         run: |
           kubectl apply -f kubernetes/development
+          kubectl rollout status deployment/solar-system -n ${{ vars.NAMESPACE }}
 
       - name: Set App Ingress Host URL
         id: app-ingress-host

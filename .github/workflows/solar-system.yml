@@ -272,4 +272,10 @@ jobs:
         run: |
           echo $URL
           echo "---------------------------------"
+          echo "HTTP Status Code:"
+          curl -o /dev/null -s -w "%{http_code}\n" -k https://$URL/live
+          echo "JSON Response:"
+          curl https://$URL/live -s -k | jq
+          echo "Status Field:"
+          curl https://$URL/live -s -k | jq -r '.status'
           curl https://$URL/live -s -k | jq -r '.status' | grep -i live

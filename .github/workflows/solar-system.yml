@@ -257,25 +257,25 @@ jobs:
           kubectl get ingress -n ${{ vars.NAMESPACE }}
           echo "Debug: Ingress object in JSON:"
           kubectl -n ${{ vars.NAMESPACE }} get ingress -o json
-          echo "APP_INGRESS_HOST=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath='{.items[0].spec.rules[0].host}')" >> $GITHUB_OUTPUT
+          echo "APP_INGRESS_HOST=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath='{.items[0].spec.rules[0].host}')" >> $GITHUB_ENV
           echo "Debug: Contents of GITHUB_OUTPUT:"
           cat $GITHUB_OUTPUT
 
-  integration-test:
-    name: Dev Integration Testing
-    needs: [dev-deploy]
-    runs-on: ubuntu-latest
-    steps:
       - name: Test URL output using CURL and JQ
-        env:
-          URL: ${{ needs.dev-deploy.outputs.APP_INGRESS_URL }}
         run: |
-          echo $URL
+          echo $APP_INGRESS_HOST
           echo "---------------------------------"
-          echo "HTTP Status Code:"
-          curl -o /dev/null -s -w "%{http_code}\n" -k https://$URL/
-          echo "JSON Response:"
-          curl https://$URL/ -s -k | jq
-          echo "Status Field:"
-          curl https://$URL/ -s -k | jq -r '.status'
-          curl https://$URL/ -s -k | jq -r '.status' | grep -i live
+          curl https://$APP_INGRESS_HOST/live -s -k | jq -r '.status' | grep -i live
+
+  # integration-test:
+  #   name: Dev Integration Testing
+  #   needs: [dev-deploy]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Test URL output using CURL and JQ
+  #       env:
+  #         URL: ${{ needs.dev-deploy.outputs.APP_INGRESS_URL }}
+  #       run: |
+  #         echo $URL
+  #         echo "---------------------------------"
+  #         curl https://$URL/live -s -k | jq -r '.status' | grep -i live

@@ -164,6 +164,9 @@ jobs:
 
   dev-deploy:
     name: Dev Deployment
+    environment:
+      name: development
+      url: https://${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
     needs: [docker]
     outputs:
       APP_INGRESS_URL: ${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
@@ -245,7 +248,7 @@ jobs:
             --dry-run=client \
             -o yaml | kubectl apply -f -
 
-      # Deploy and wait 15s to app to start
+      # Deploy and wait 15s for app to start
       - name: Deploy to Dev Env
         run: |
           kubectl apply -f kubernetes/development
@@ -257,6 +260,8 @@ jobs:
         id: app-ingress-host
         run: |
           echo "APP_INGRESS_HOST=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath='{.items[0].spec.rules[0].host}')" >> $GITHUB_ENV
+          echo "APP_INGRESS_HOST=$APP_INGRESS_HOST" >> $GITHUB_OUTPUT
+
       - name: Test URL output using CURL and JQ
         run: |
           echo $APP_INGRESS_HOST

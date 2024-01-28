@@ -262,7 +262,7 @@ jobs:
           kubectl get ingress -n ${{ vars.NAMESPACE }}
           echo "Debug: Ingress object in JSON:"
           kubectl -n ${{ vars.NAMESPACE }} get ingress -o json
-          (echo "APP_INGRESS_HOST=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath='{.items[0].spec.rules[0].host}')" >> $GITHUB_ENV)
+          echo "APP_INGRESS_HOST=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath='{.items[0].spec.rules[0].host}')" >> $GITHUB_OUTPUT
           echo "Debug: APP_INGRESS_HOST=${{ env.APP_INGRESS_HOST }}"
 
   integration-test:

@@ -163,6 +163,34 @@ jobs:
             ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/solar-system:${{ github.sha }}
 
+  reports-s3:
+    needs: [unit-testing, code-coverage]
+    name: AWS S3 - Upload Reports
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Download Moca Test Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: mocha-test-result
+
+      - name: Download Code Coverage Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: code-coverage-report
+
+      - name: Merge Test Files
+        run: |
+          ls -ltr
+          mkdir reports-${{ github.sha }}
+          mv cobertura-coverage.xml reports-${{ github.sha }}/
+          mv test-results.xml reports-${{ github.sha }}/
+          ls -ltr reports-${{ github.sha }}/
+
+      - name: Upload Reports to S3
+        run: echo "Uploading..."
+
+
   dev-deploy:
     if: contains(github.ref, 'feature/')
     name: Dev Deployment

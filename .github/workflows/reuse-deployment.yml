@@ -2,6 +2,25 @@ name: Deployment Reusable Workflow
 
 on:
   workflow_call:
+    inputs:
+      mongodb-uri:
+        required: true
+        type: string
+      kubectl-version:
+        description: Provide the required kubectl version
+        default: v1.26.0
+        required: false
+        type: string
+      k8s-manifest-dir:
+        description: Directory containing Kubernetes manifest files
+        default: kubernetes/
+        required: true
+        type: string
+      environment:
+        description: Provide the deployment environment
+        default: dev
+        required: true
+        type: string
     secrets:
       k8s-kubeconfig:
         required: false
@@ -11,7 +30,7 @@ on:
 jobs:
   reuse_deploy:
     environment:
-      name: development
+      name: ${{ inputs.environment }}
       url: https://${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
     outputs:
       APP_INGRESS_URL: ${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
@@ -23,12 +42,12 @@ jobs:
       - name: Install kubectl CLI
         uses: azure/setup-kubectl@v3
         with:
-          version: v1.26.0 # default is latest stable
+          version: ${{ inputs.kubectl-version }} # default is latest stable
 
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1.8.0
         with:
-          kubectl_version: v1.26.4
+          kubectl_version: ${{ inputs.kubectl-version }}
           config: .github/kind-config.yml
 
       # # Uncomment this step if you want to use a pre-existing cluster.
@@ -72,7 +91,7 @@ jobs:
         with:
           tokenPrefix: '_{_'
           tokenSuffix: '_}_'
-          files: '["kubernetes/development/*.yaml"]'
+          files: '["${{ inputs.k8s-manifest-dir }}*.yaml"]'
         env:
           NAMESPACE: ${{ vars.NAMESPACE }}
           REPLICAS: ${{ vars.REPLICAS }}
@@ -81,12 +100,12 @@ jobs:
 
       - name: Check files
         run: |
-          cat kubernetes/development/*.yaml
+          cat ${{ inputs.k8s-manifest-dir }}*.yaml
 
       - name: Create MongoDB secret
         run: |
           kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
-            --from-literal=MONGO_URI=${{ env.MONGO_URI }} \
+            --from-literal=MONGO_URI=${{ inputs.mongodb-uri }} \
             --from-literal=MONGO_USERNAME=${{ vars.MONGO_USERNAME }} \
             --from-literal=MONGO_PASSWORD=${{ secrets.mongodb-password }} \
             --save-config \
@@ -94,9 +113,9 @@ jobs:
             -o yaml | kubectl apply -f -
 
       # Deploy and wait 15s for app to start
-      - name: Deploy to Dev Env
+      - name: Deploy to ${{ inputs.environment }} Env
         run: |
-          kubectl apply -f kubernetes/development
+          kubectl apply -f ${{ inputs.k8s-manifest-dir }}
           kubectl rollout status deployment/solar-system -n ${{ vars.NAMESPACE }}
           sleep 15
           kubectl get pods -n ${{ vars.NAMESPACE }} -l app=solar-system

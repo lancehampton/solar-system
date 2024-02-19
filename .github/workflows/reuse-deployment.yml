@@ -2,6 +2,11 @@ name: Deployment Reusable Workflow
 
 on:
   workflow_call:
+    secrets:
+      k8s-kubeconfig:
+        required: false
+      mongodb-password:
+        required: true
 
 jobs:
   reuse_deploy:
@@ -31,7 +36,7 @@ jobs:
       # - uses: azure/k8s-set-context@v3
       #   with:
       #       method: kubeconfig
-      #       kubeconfig: <your kubeconfig>
+      #       kubeconfig: ${{ secrets.k8s-kubeconfig }}
       #       context: <context name> # current-context from kubeconfig is used as default
 
       - name: Get cluster details
@@ -83,7 +88,7 @@ jobs:
           kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
             --from-literal=MONGO_URI=${{ env.MONGO_URI }} \
             --from-literal=MONGO_USERNAME=${{ env.MONGO_USERNAME }} \
-            --from-literal=MONGO_PASSWORD=${{ env.MONGO_PASSWORD }} \
+            --from-literal=MONGO_PASSWORD=${{ secrets.mongodb-password }} \
             --save-config \
             --dry-run=client \
             -o yaml | kubectl apply -f -
@@ -107,18 +112,3 @@ jobs:
           echo $APP_INGRESS_HOST
           echo "---------------------------------"
           curl https://$APP_INGRESS_HOST/live -s -k | jq -r '.status' | grep -i live
-
-  # # Not used with internal kind cluster
-  # prod-integration-test:
-  #   if: github.ref == 'refs/heads/main'
-  #   name: Prod Integration Testing
-  #   needs: [prod-deploy]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Test URL output using CURL and JQ
-  #       env:
-  #         URL: ${{ needs.prod-deploy.outputs.APP_INGRESS_URL }}
-  #       run: |
-  #         echo $URL
-  #         echo "---------------------------------"
-  #         curl https://$URL/live -s -k | jq -r '.status' | grep -i live

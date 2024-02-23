@@ -42,14 +42,10 @@ jobs:
       with:
         node-version: ${{ matrix.nodejs_version }}
 
-    - name: Cache NPM dependencies
-      uses: actions/cache@v3
+    - name: Composite Action - Cache and Install NPM Packages
+      uses: ./.github/custom-actions/npm-action
       with:
-        path: node_modules # Folder where npm dependencies are installed
-        key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
-
-    - name: Install dependencies
-      run: npm install
+        path: node_modules
 
     - name: Run unit tests
       id: nodejs-unit-test
@@ -87,14 +83,10 @@ jobs:
     #   with:
     #     node-version: 18
 
-    - name: Cache NPM dependencies
-      uses: actions/cache@v3
+    - name: Composite Action - Cache and Install NPM Packages
+      uses: ./.github/custom-actions/npm-action
       with:
-        path: node_modules # Folder where npm dependencies are installed
-        key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
-
-    - name: Install dependencies
-      run: npm install
+        path: node_modules
 
     - name: Run code coverage
       continue-on-error: true
@@ -188,16 +180,19 @@ jobs:
           ls -ltr reports-${{ github.sha }}/
 
       - name: Upload Reports to S3
-        uses: jakejarvis/s3-sync-action@master
-        with:
-          args: --follow-symlinks --delete
-        env:
-          AWS_S3_BUCKET: 'lance-reports-west'
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-west-2'   # optional: defaults to us-east-1
-          SOURCE_DIR: 'reports-${{ github.sha }}'      # optional: defaults to entire repository
-          DEST_DIR: 'reports-${{ github.sha }}'
+        run: echo "Uploading..."
+
+      # - name: Upload Reports to S3
+      #   uses: jakejarvis/s3-sync-action@master
+      #   with:
+      #     args: --follow-symlinks --delete
+      #   env:
+      #     AWS_S3_BUCKET: ${{ vars.REPORTS_BUCKET }}
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     AWS_REGION: 'us-west-2'   # optional: defaults to us-east-1
+      #     SOURCE_DIR: 'reports-${{ github.sha }}'      # optional: defaults to entire repository
+      #     DEST_DIR: 'reports-${{ github.sha }}'
 
 
   dev-deploy:
